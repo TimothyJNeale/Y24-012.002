@@ -73,7 +73,6 @@ def task_train003(x):
     # then slie the top rows of the shape only one step to the rgi
 
     # Find the top row of each shape
-    rows_to_move = []
     shapes = []
     in_shape = False
     # for every row in the task
@@ -81,34 +80,57 @@ def task_train003(x):
 
         # Is there any colour on that row
         if x[i].sum()>0:
+            # if this is the first row in a shape then create a new rows_to_move list
+            if not in_shape:
+                rows_to_move = []
+                in_shape = True
             # Mark such a row to shift right
             rows_to_move.append(i)
-            in_shape = True
+
     
         else:
             # if we no longer in a shape but the in shape flag is set, the do not shift the previous row
             if in_shape:
                 rows_to_move.pop()
-                in_shape = False
+                # reverse the sequence of rows to move
+                rows_to_move.reverse()
                 shapes.append(rows_to_move)
+                in_shape = False
 
-    # Slide the top row to the right, 
+    # Slide the top rows to the right, 
     y = x.copy()
 
-    # for each shape find the furthest rightward coloured cell
+    # for each shape 
     for shape in shapes:
-        imax = 0
-        for row in shape:
-            imax = max(imax, np.where(x[row]>0)[0][-1])
+        # print(shape)
+        penultimate = True
 
-        # now all the cells int he reow that should be moved to the right, but no bigher than imax
+        rmax = 0
         for row in shape:
-            # shift all the cells in that row to the right but not if it is the the furthest right coloured cell
+            # find the furthest rightward cell in the row with a colour in it
+
             for i in range(x.shape[1]-1, 0, -1):
-                if x[row, i]>0 and i < imax:
-                    y[row, i+1] = x[row, i]
-                    y[row, i] = 0
+                if x[row, i]>0 and i > rmax:
+                    rmax = i
+                    # print(rmax)
+                    break
 
+        for row in shape:
+            # for the penultimate row in the shape do not move timax or the one before it
+            if penultimate:
+                penultimate = False
+                 # shift all the cells in that row to the right but not if it is the the furthest right coloured cell
+                for i in range(x.shape[1]-1, 0, -1):
+                    if i < rmax-1:
+                        y[row, i+1] = x[row, i]
+                        y[row, i] = 0
+
+            else:
+                # shift all the cells in that row to the right but not if it is the the furthest right coloured cell
+                for i in range(x.shape[1]-1, 0, -1):
+                    if i < rmax:
+                        y[row, i+1] = x[row, i]
+                        y[row, i] = 0
 
     return y
 
